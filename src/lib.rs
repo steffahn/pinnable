@@ -96,28 +96,159 @@
 //! [MIT / Apache 2.0 licensed]: https://img.shields.io/crates/l/pinnable.svg
 //! [docs.rs]: https://docs.rs/pinnable/badge.svg
 
-use std::sync;
+use std::{fmt, ops, pin::Pin, sync};
 
+/// Documentation still incomplete. API similar to [`std::sync::Mutex`].
+/// # Examples
+/// ```
+/// use std::future::Future;
+/// use std::pin::Pin;
+/// use std::sync::Arc;
+/// use std::task::{Context, Poll};
+/// 
+/// fn poll_shared_future<F: Future>(
+///     fut: &Pin<Arc<pinnable::Mutex<F>>>,
+///     ctx: &mut Context<'_>,
+/// ) -> Poll<F::Output> {
+///     fut.as_ref().lock().unwrap().as_mut().poll(ctx)
+/// }
+/// ```
 // FIXME: add docs
 #[allow(missing_docs, clippy::missing_docs_in_private_items)]
 pub struct Mutex<T: ?Sized>(sync::Mutex<T>);
 
+impl<T: ?Sized> fmt::Debug for Mutex<T>
+where
+    T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&self.0, f)
+    }
+}
+
 // FIXME: add docs
-#[allow(missing_docs, clippy::missing_docs_in_private_items)]
+#[allow(
+    missing_docs,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_errors_doc
+)]
 impl<T> Mutex<T> {
     pub fn new(t: T) -> Self {
         Self(sync::Mutex::new(t))
     }
+
+    pub fn into_inner(self) -> sync::LockResult<T> {
+        self.0.into_inner()
+    }
 }
 
 // FIXME: add docs
-#[allow(missing_docs, clippy::missing_docs_in_private_items, clippy::missing_errors_doc)]
+#[allow(clippy::missing_docs_in_private_items)]
+fn wrap_result<S, T>(f: impl FnOnce(S) -> T, r: sync::LockResult<S>) -> sync::LockResult<T> {
+    match r {
+        Ok(x) => Ok(f(x)),
+        Err(e) => Err(sync::PoisonError::new(f(e.into_inner()))),
+    }
+}
+
+// FIXME: add docs
+#[allow(clippy::missing_docs_in_private_items)]
+fn wrap_result_try<S, T>(
+    f: impl FnOnce(S) -> T,
+    r: sync::TryLockResult<S>,
+) -> sync::TryLockResult<T> {
+    use sync::TryLockError::{Poisoned, WouldBlock};
+    match r {
+        Ok(x) => Ok(f(x)),
+        Err(Poisoned(e)) => Err(Poisoned(sync::PoisonError::new(f(e.into_inner())))),
+        Err(WouldBlock) => Err(WouldBlock),
+    }
+}
+
+// FIXME: add docs
+#[allow(
+    missing_docs,
+    clippy::missing_docs_in_private_items,
+    clippy::missing_errors_doc
+)]
 impl<T: ?Sized> Mutex<T> {
-    pub fn lock(&self) -> sync::LockResult<MutexGuard<'_, T>> {
-        todo!()
+    pub fn lock(self: Pin<&Self>) -> sync::LockResult<PinMutexGuard<'_, T>> {
+        wrap_result(
+            |x| unsafe { Pin::new_unchecked(x) },
+            self.get_ref().0.lock(),
+        )
+    }
+
+    pub fn lock_no_pin(&self) -> sync::LockResult<NoPinMutexGuard<'_, T>> {
+        wrap_result(NoPinMutexGuard, self.0.lock())
+    }
+
+    pub fn try_lock(self: Pin<&Self>) -> sync::TryLockResult<PinMutexGuard<'_, T>> {
+        wrap_result_try(
+            |x| unsafe { Pin::new_unchecked(x) },
+            self.get_ref().0.try_lock(),
+        )
+    }
+
+    pub fn try_lock_no_pin(&self) -> sync::TryLockResult<NoPinMutexGuard<'_, T>> {
+        wrap_result_try(NoPinMutexGuard, self.0.try_lock())
+    }
+
+    pub fn is_poisoned(&self) -> bool {
+        self.0.is_poisoned()
+    }
+
+    pub fn get_mut(self: Pin<&mut Self>) -> sync::LockResult<Pin<&mut T>> {
+        wrap_result(
+            |x| unsafe { Pin::new_unchecked(x) },
+            unsafe { Pin::into_inner_unchecked(self) }.0.get_mut(),
+        )
+    }
+
+    pub fn get_mut_no_pin(&mut self) -> sync::LockResult<&mut T> {
+        self.0.get_mut()
     }
 }
 
 // FIXME: add docs
 #[allow(missing_docs, clippy::missing_docs_in_private_items)]
-pub struct MutexGuard<'a, T: ?Sized>(sync::MutexGuard<'a, T>);
+pub type PinMutexGuard<'a, T> = Pin<sync::MutexGuard<'a, T>>;
+
+// FIXME: add docs
+#[allow(missing_docs, clippy::missing_docs_in_private_items)]
+pub struct NoPinMutexGuard<'a, T: ?Sized>(sync::MutexGuard<'a, T>);
+
+impl<T: ?Sized> fmt::Debug for NoPinMutexGuard<'_, T>
+where
+    T: fmt::Debug,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Debug::fmt(&**self, f)
+    }
+}
+
+impl<T: ?Sized> fmt::Display for NoPinMutexGuard<'_, T>
+where
+    T: fmt::Display,
+{
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        fmt::Display::fmt(&**self, f)
+    }
+}
+
+impl<T: ?Sized> ops::Deref for NoPinMutexGuard<'_, T> {
+    type Target = T;
+
+    fn deref(&self) -> &T {
+        &self.0
+    }
+}
+
+impl<T: ?Sized> ops::DerefMut for NoPinMutexGuard<'_, T>
+where
+    T: Unpin,
+{
+    fn deref_mut(&mut self) -> &mut T {
+        &mut self.0
+    }
+}
