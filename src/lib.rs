@@ -89,7 +89,7 @@
 //!
 //! A wrapper for [`Mutex`](std::sync::Mutex "std::sync::Mutex")
 //! that supports obtaining `Pin<&mut T>` references to the contained value.
-//! It’s a trade-off though, because it can no longer be locked _without_ being pinned.
+//! It’s a trade-off though, because it can no longer provide mutable access _without_ being pinned.
 //!
 //! [github]: https://img.shields.io/badge/github-steffahn/pinnable-yellowgreen.svg
 //! [crates.io]: https://img.shields.io/crates/v/pinnable.svg

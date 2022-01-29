@@ -13,7 +13,7 @@
 
 A wrapper for [`Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html "std::sync::Mutex")
 that supports obtaining `Pin<&mut T>` references to the contained value.
-It’s a trade-off though, because it can no longer be locked _without_ being pinned.
+It’s a trade-off though, because it can no longer provide mutable access _without_ being pinned.
 
 ## License
 Licensed under either of
