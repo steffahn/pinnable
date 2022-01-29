@@ -1,5 +1,3 @@
-#![no_std]
-#![forbid(unsafe_code)]
 // reasonable clippy categories
 #![warn(clippy::pedantic, clippy::nursery, clippy::cargo)]
 // reasonable clippy::restriction lints
@@ -85,15 +83,41 @@
     rustdoc::invalid_html_tags
 )]
 
-//! [![crates.io]](https://crates.io/crates/template_crate)
-//! [![github]](https://github.com/steffahn/template_crate)
-//! [![MIT / Apache 2.0 licensed]](https://github.com/steffahn/template_crate#License)
-//! [![unsafe forbidden]](https://github.com/rust-secure-code/safety-dance/)
+//! [![crates.io]](https://crates.io/crates/pinnable)
+//! [![github]](https://github.com/steffahn/pinnable)
+//! [![MIT / Apache 2.0 licensed]](https://github.com/steffahn/pinnable#License)
 //!
-//! Module-level documentation goes here!!
+//! A wrapper for [`Mutex`](std::sync::Mutex "std::sync::Mutex")
+//! that supports obtaining `Pin<&mut T>` references to the contained value.
+//! It’s a trade-off though, because it can no longer be locked _without_ being pinned.
 //!
-//! [github]: https://img.shields.io/badge/github-steffahn/template__crate-yellowgreen.svg
-//! [crates.io]: https://img.shields.io/crates/v/template_crate.svg
-//! [MIT / Apache 2.0 licensed]: https://img.shields.io/crates/l/template_crate.svg
-//! [docs.rs]: https://docs.rs/template_crate/badge.svg
-//! [unsafe forbidden]: https://img.shields.io/badge/unsafe-forbidden-success.svg
+//! [github]: https://img.shields.io/badge/github-steffahn/pinnable-yellowgreen.svg
+//! [crates.io]: https://img.shields.io/crates/v/pinnable.svg
+//! [MIT / Apache 2.0 licensed]: https://img.shields.io/crates/l/pinnable.svg
+//! [docs.rs]: https://docs.rs/pinnable/badge.svg
+
+use std::sync;
+
+// FIXME: add docs
+#[allow(missing_docs, clippy::missing_docs_in_private_items)]
+pub struct Mutex<T: ?Sized>(sync::Mutex<T>);
+
+// FIXME: add docs
+#[allow(missing_docs, clippy::missing_docs_in_private_items)]
+impl<T> Mutex<T> {
+    pub fn new(t: T) -> Self {
+        Self(sync::Mutex::new(t))
+    }
+}
+
+// FIXME: add docs
+#[allow(missing_docs, clippy::missing_docs_in_private_items, clippy::missing_errors_doc)]
+impl<T: ?Sized> Mutex<T> {
+    pub fn lock(&self) -> sync::LockResult<MutexGuard<'_, T>> {
+        todo!()
+    }
+}
+
+// FIXME: add docs
+#[allow(missing_docs, clippy::missing_docs_in_private_items)]
+pub struct MutexGuard<'a, T: ?Sized>(sync::MutexGuard<'a, T>);

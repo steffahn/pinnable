@@ -1,19 +1,19 @@
-# template_crate
+# pinnable
 
-[![docs.rs]](https://docs.rs/template_crate)
-[![crates.io]](https://crates.io/crates/template_crate)
-[![github]](https://github.com/steffahn/template_crate)
+[![docs.rs]](https://docs.rs/pinnable)
+[![crates.io]](https://crates.io/crates/pinnable)
+[![github]](https://github.com/steffahn/pinnable)
 [![MIT / Apache 2.0 licensed]](#License)
-[![unsafe forbidden]](https://github.com/rust-secure-code/safety-dance/)
 
-[github]: https://img.shields.io/badge/github-steffahn/template__crate-yellowgreen.svg
-[crates.io]: https://img.shields.io/crates/v/template_crate.svg
-[MIT / Apache 2.0 licensed]: https://img.shields.io/crates/l/template_crate.svg
-[docs.rs]: https://docs.rs/template_crate/badge.svg
-[unsafe forbidden]: https://img.shields.io/badge/unsafe-forbidden-success.svg
+[github]: https://img.shields.io/badge/github-steffahn/pinnable-yellowgreen.svg
+[crates.io]: https://img.shields.io/crates/v/pinnable.svg
+[MIT / Apache 2.0 licensed]: https://img.shields.io/crates/l/pinnable.svg
+[docs.rs]: https://docs.rs/pinnable/badge.svg
 
 
-README documentation goes here!!
+A wrapper for [`Mutex`](https://doc.rust-lang.org/std/sync/struct.Mutex.html "std::sync::Mutex")
+that supports obtaining `Pin<&mut T>` references to the contained value.
+It’s a trade-off though, because it can no longer be locked _without_ being pinned.
 
 ## License
 Licensed under either of
